@@ -31,7 +31,7 @@ function readFiles(dir) {
 
 /**
  * Utility method to extract the caption from a filename
- * @param {*} filename 
+ * @param {*} filename  
  */
 function extractCaption(filename) {
     
