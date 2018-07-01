@@ -1,11 +1,11 @@
+const process = require('process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-var commandExistsSync = require('command-exists').sync;
-const {
-    execSync
-} = require('child_process');
+const commandExistsSync = require('command-exists').sync;
+const execSync = require('child_process').execSync;
 
+const TEMP = 'processed_'
 const OUTPUT_PREFIX = 'processed_'
 const OUTPUT_NAME = 'output'
 const TIME_PER_IMAGE = '4'
@@ -24,18 +24,28 @@ function logProgress(idx, list) {
 
 /**
  * Deletes a file if file's path matches processed prefix
- * @param {*} filepath 
  */
-function deletePrefixedFile(filepath, idx, list) {
+function deleteProcessedFile() {
 
-    logProgress(idx, list);
+    const filepath = path.join(os.tmpdir(), TEMP);
 
-    const filename = path.basename(filepath) || '';
-
-    if (filename.match(`${OUTPUT_PREFIX}_[a-zA-Z-_]+.jpg$`, 'gi')) {
-        console.info(`deleting file ${ filepath }`);
-        fs.unlinkSync(filepath);
+    if (!fs.existsSync(filepath)) {
+        return
     }
+
+    const files = readFiles(filepath);
+
+    files.forEach((filepath, idx, list) => {
+
+        logProgress(idx, list);
+
+        const filename = path.basename(filepath) || '';
+
+        if (filename.match(`${OUTPUT_PREFIX}_[a-zA-Z-_]+.jpg$`, 'gi')) {
+            console.info(`deleting file ${ filepath }`);
+            fs.unlinkSync(filepath);
+        }
+    });
 }
 
 /**
@@ -44,77 +54,123 @@ function deletePrefixedFile(filepath, idx, list) {
  * @param {*} idx 
  * @param {*} list 
  */
-function processFile(file, idx, list) {
+function processImages(inputPath) {
 
-    logProgress(idx, list);
+    const pattern = `[a-zA-Z\-]+.jpg$`
 
-    var matches = file.match(/[A-Z\-]+.jpg/gi);
-
-    if (!matches || matches.length < 1) {
-        console.log('err', file)
-        return
+    const files = readFiles(inputPath)
+        .filter(file => file.match(`${ pattern }`, 'gi'));
+    
+    const outputPath = path.join(os.tmpdir(), TEMP);
+    
+    if(!fs.existsSync(outputPath)) {
+        fs.mkdirSync(outputPath);
     }
 
-    var caption = matches[0]
-        .replace(/.jpg/gi, '')
-        .replace(/-/gi, ' ')
-        .replace(/(?:^|\s)\S/g, c => c.toUpperCase())
-        .replace(/and/gi, 'and')
-        .replace(/with/gi, 'with');
-    console.log('file', file)
-    console.log(caption)
-    
-    return execSync(`magick "${file}" -gravity Center -background black -resize 1920x1080 -extent 1920x1080 -font Arial-Bold -pointsize 60 -stroke black -strokewidth 2 -fill white -gravity SouthEast -draw "text 30,30 '${ caption }'" ${ OUTPUT_PREFIX }${ idx }.jpg`)
+    files.forEach((filepath, idx, list) => {
+        
+        logProgress(idx, list);
+
+        var matches = filepath.match(`${pattern}`, 'gi');
+
+        if (!matches || matches.length < 1) {
+            console.error('error. failed to parse filename for:', filepath)
+            return
+        }
+
+        var caption = matches[0]
+            .replace(/.jpg/gi, '')
+            .replace(/-/gi, ' ')
+            .replace(/(?:^|\s)\S/g, c => c.toUpperCase())
+            .replace(/and/gi, 'and')
+            .replace(/with/gi, 'with');
+        console.log('file', filepath)
+        console.log(caption)
+
+        const output = path.join(outputPath, `${ OUTPUT_PREFIX }${ idx }.jpg`)  
+        console.log('output',output)
+        execSync(`magick "${filepath}" -gravity Center -background black -resize 1920x1080 -extent 1920x1080 -font Arial-Bold -pointsize 60 -stroke black -strokewidth 2 -fill white -gravity SouthEast -draw "text 30,30 '${ caption }'" ${ output }`)
+    })
 }
 
 /**
  * Processes processed images files, sequencing them into a single mp4 video file. Deletes exsiting output file if it already exsits.
  */
-function sequenceImages() {
-    
-    const outputpath = `${ OUTPUT_NAME }.mp4`
+function sequenceImages(outputPath) {
 
-    if(fs.existsSync(outputpath)) {
-        console.info(`deleting existing file ${ outputpath }`);
-        fs.unlinkSync(outputpath);
+    const output = path.join(outputPath, `${ OUTPUT_NAME }.mp4`)
+    
+    if (fs.existsSync(output)) {
+        console.info(`deleting existing file ${ output }`);
+        fs.unlinkSync(output);
     }
     
-    console.info(`sequencing new video file ${ outputpath }`);
-    execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ OUTPUT_PREFIX }%d.jpg -c:v libx264 -vf "fps=25,format=yuv420p" ${ outputpath }`, {
+    const tempPath = path.join(os.tmpdir(), TEMP, `${ OUTPUT_PREFIX }%d.jpg`);
+    console.info(`sequencing new video file ${ output }`);
+    execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ tempPath } -c:v libx264 -vf "fps=25,format=yuv420p" ${ output }`, {
         stdio: [0, 1, 2]
     })
 }
 
 /**
  * Returns file listing array of full filepaths, for specified path
- * @param {*} path 
+ * @param {*} dir 
  */
-function readFiles(path) {
+function readFiles(dir) {
 
-    return fs.readdirSync(path)
-        .map(file => path.join(path, file))
+    return fs.readdirSync(dir)
+        .map(file => path.join(dir, file))
+}
+
+/**
+ * Utility method to get an process arguments value
+ * @param {*} key 
+ */
+function getArg(key) {
+
+    const args = process.argv;
+    const idx = args.findIndex(argument => (argument || '').toLowerCase() === key);
+
+    return args[idx];
+}
+
+/**
+ * Utility method to get an process arguments path value. The convention used is that the path value is in the arg directly following
+ * the keyed argument, if found. Allows default value to be supplied if not matching key found
+ * @param {*} key 
+ * @param {*} defaultValue 
+ */
+function getArgPath(key, defaultValue) {
+
+    const args = process.argv;
+    const idx = args.findIndex(argument => (argument || '').toLowerCase() === key);
+
+    if (idx < 0) {
+        return defaultValue;
+    } else {
+        return args[idx + 1];
+    }
 }
 
 
-if(!commandExistsSync('ffmpeg')) {
+if (!commandExistsSync('ffmpeg')) {
     throw new Error('ffmpeg is not installed. install ffmpeg version 3.4. https://ffmpeg.org/download.html')
 }
 
-if(!commandExistsSync('magick')) {
+if (!commandExistsSync('magick')) {
     throw new Error('magick not found. install ImageMagick 7.0.8. https://www.imagemagick.org/script/index.php')
 }
 
-console.info('reading files');
+if(getArg('-h')) {
 
-const files = readFiles('E:\/test\/')
+    console.log(`help`)
 
-console.info('deleting old files');
+    process.exit(1);
+}
 
-files.forEach(deletePrefixedFile);
+var inputPath = getArgPath('-i', './');
+var outputPath = getArgPath('-o', './');
 
-console.info('processing images');
-
-files.forEach(processFile); 
-
-console.info('sequencing videos');
-sequenceImages()
+deleteProcessedFile();
+processImages(inputPath);
+sequenceImages(outputPath);
