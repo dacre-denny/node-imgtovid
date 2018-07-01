@@ -18,7 +18,6 @@ const TIME_PER_IMAGE = '4'
 function logProgress(idx, list) {
 
     if (list.length) {
-
         console.info(`${ parseInt((idx * 100) / list.length) }%`);
     }
 }
@@ -34,7 +33,6 @@ function deletePrefixedFile(filepath, idx, list) {
     const filename = path.basename(filepath) || '';
 
     if (filename.match(`${OUTPUT_PREFIX}_[a-zA-Z-_]+.jpg$`, 'gi')) {
-
         console.info(`deleting file ${ filepath }`);
         fs.unlinkSync(filepath);
     }
@@ -69,17 +67,32 @@ function processFile(file, idx, list) {
     return execSync(`magick "${file}" -gravity Center -background black -resize 1920x1080 -extent 1920x1080 -font Arial-Bold -pointsize 60 -stroke black -strokewidth 2 -fill white -gravity SouthEast -draw "text 30,30 '${ caption }'" ${ OUTPUT_PREFIX }${ idx }.jpg`)
 }
 
+/**
+ * Processes processed images files, sequencing them into a single mp4 video file. Deletes exsiting output file if it already exsits.
+ */
 function sequenceImages() {
+    
+    const outputpath = `${ OUTPUT_NAME }.mp4`
 
-    execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ OUTPUT_PREFIX }%d.jpg -c:v libx264 -vf "fps=25,format=yuv420p" ${ OUTPUT_NAME }.mp4`, {
+    if(fs.existsSync(outputpath)) {
+        console.info(`deleting existing file ${ outputpath }`);
+        fs.unlinkSync(outputpath);
+    }
+    
+    console.info(`sequencing new video file ${ outputpath }`);
+    execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ OUTPUT_PREFIX }%d.jpg -c:v libx264 -vf "fps=25,format=yuv420p" ${ outputpath }`, {
         stdio: [0, 1, 2]
     })
 }
 
-function readFiles(filepath) {
+/**
+ * Returns file listing array of full filepaths, for specified path
+ * @param {*} path 
+ */
+function readFiles(path) {
 
-    return fs.readdirSync(filepath)
-        .map(file => path.join(filepath, file))
+    return fs.readdirSync(path)
+        .map(file => path.join(path, file))
 }
 
 
@@ -91,23 +104,17 @@ if(!commandExistsSync('magick')) {
     throw new Error('magick not found. install ImageMagick 7.0.8. https://www.imagemagick.org/script/index.php')
 }
 
+console.info('reading files');
+
 const files = readFiles('E:\/test\/')
+
+console.info('deleting old files');
 
 files.forEach(deletePrefixedFile);
 
+console.info('processing images');
+
 files.forEach(processFile); 
 
+console.info('sequencing videos');
 sequenceImages()
-/*
-console.log(files)
-
-
-const files = readFiles('E:\/test')
-    .filter(file => deleteFiles(file))
-    .filter(file => file.match(/[A-Z\-]+.jpg/gi))
-    .map((jpg, index, list) => processFile(jpg, index, list));
-
-execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ OUTPUT_PREFIX }%d.jpg -c:v libx264 -vf "fps=25,format=yuv420p" ${ OUTPUT_NAME }.mp4`, {
-    stdio: [0, 1, 2]
-})
-*/
