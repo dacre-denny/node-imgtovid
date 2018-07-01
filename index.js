@@ -13,7 +13,16 @@ if (!commandExistsSync('magick')) {
 
 if(Args.hasKey('-h')) {
 
-    console.log(`help`)
+    console.log(`
+run the app via node:
+    node index.js -i PATH -o PATH -d NUMBER -h
+
+supported argument:
+    -i : specify source directory for photos
+    -o : specify destination directory for output_video.mp4
+    -d : specify the duration in seconds for each photo in the output video
+    -h : display this help summary
+    `)
 }
 else {
 
