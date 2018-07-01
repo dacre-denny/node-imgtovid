@@ -5,7 +5,6 @@ const path = require('path');
 
 const TEMP = 'imgtovid_processing'
 const OUTPUT_NAME = 'output_video'
-const TIME_PER_IMAGE = '4'
 
 /**
  * Logs the precentage of progress for an active process
@@ -109,8 +108,10 @@ function processImages(inputPath) {
 
 /**
  * Processes processed images files, sequencing them into a single mp4 video file. Deletes exsiting output file if it already exsits.
+ * @param {*} outputPath 
+ * @param {*} duration 
  */
-function sequenceImages(outputPath) {
+function sequenceImages(outputPath, duration) {
 
     const output = path.join(outputPath, `${ OUTPUT_NAME }.mp4`)
     
@@ -119,11 +120,14 @@ function sequenceImages(outputPath) {
         fs.unlinkSync(output);
     }
     
-    const tempPath = path.join(os.tmpdir(), TEMP, `%d.jpg`);
-    console.info(`sequencing new video file ${ output }`);
-    execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ tempPath } -c:v libx264 -vf "fps=25,format=yuv420p" ${ output }`, {
+    const sourcePath = path.join(os.tmpdir(), TEMP, `%d.jpg`);
+    console.info(`sequencing new video file from images matching: ${ sourcePath }`);
+
+    execSync(`ffmpeg -r 1/${ duration } -i ${ sourcePath } -c:v libx264 -vf "fps=25,format=yuv420p" ${ output }`, {
         stdio: [0, 1, 2]
     });
+    
+    console.info(`new video file created: ${ output }`);
 }
 
 module.exports = {

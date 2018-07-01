@@ -1,9 +1,6 @@
-const process = require('process');
 const commandExistsSync = require('command-exists').sync;
 
-
 const Args = require('./args');
-
 const Process = require('./process');
 
 if (!commandExistsSync('ffmpeg')) {
@@ -17,13 +14,18 @@ if (!commandExistsSync('magick')) {
 if(Args.hasKey('-h')) {
 
     console.log(`help`)
-
-    process.exit(1);
 }
+else {
 
-var inputPath = Args.getPath('-i', './');
-var outputPath = Args.getPath('-o', './');
+    var inputPath = Args.getArg('-i', './');
+    var outputPath = Args.getArg('-o', './');
+    var duration = parseInt(Args.getArg('-d', '4'));
 
-Process.deleteProcessedFile();
-Process.processImages(inputPath);
-Process.sequenceImages(outputPath);
+    if(isNaN(duration) || duration < 1) {
+        throw Error('duration must be 1 or more')
+    }
+    
+    Process.deleteProcessedFile();
+    Process.processImages(inputPath);
+    Process.sequenceImages(outputPath, duration);
+}
