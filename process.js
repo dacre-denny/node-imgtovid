@@ -7,6 +7,14 @@ const TEMP = 'imgtovid_processing'
 const OUTPUT_NAME = 'output_video'
 
 /**
+ * Utility method constructs full path to temporary direction
+ */
+function getTempPath() {
+    console.log(path.join(os.tmpdir(), TEMP))
+    return path.join(os.tmpdir(), TEMP);
+}
+
+/**
  * Logs the precentage of progress for an active process
  * @param {*} idx 
  * @param {*} list 
@@ -23,9 +31,10 @@ function logProgress(idx, list, prefix = '') {
  * Returns file listing array of full filepaths, for specified path
  * @param {*} dir 
  */
-function readFiles(dir) {
+function listFilePaths(dir, filenameFilter = `[a-zA-Z\-]+.jpg$`) {
 
     return fs.readdirSync(dir)
+        .filter(file => file.match(filenameFilter, 'gi'))
         .map(file => path.join(dir, file))
 }
 
@@ -34,14 +43,22 @@ function readFiles(dir) {
  * @param {*} filename  
  */
 function extractCaption(filename) {
-    
-    return filename
-    .replace(/.jpg/gi, '')
-    .replace(/.png/gi, '')
-    .replace(/-/gi, ' ')
-    .replace(/(?:^|\s)\S/g, c => c.toUpperCase())
-    .replace(/and/gi, 'and')
-    .replace(/with/gi, 'with');
+
+    var matches = filename.match(`[a-zA-Z\-]+.jpg$`, 'gi');
+
+    if (!matches || matches.length < 1) {
+
+        return ''
+    } else {
+
+        return filename
+            .replace(/.jpg/gi, '')
+            .replace(/.png/gi, '')
+            .replace(/-/gi, ' ')
+            .replace(/(?:^|\s)\S/g, c => c.toUpperCase())
+            .replace(/and/gi, 'and')
+            .replace(/with/gi, 'with');
+    }
 }
 
 /**
@@ -49,24 +66,19 @@ function extractCaption(filename) {
  */
 function deleteProcessedFile() {
 
-    const filepath = path.join(os.tmpdir(), TEMP);
+    const filepath = getTempPath();
 
     if (!fs.existsSync(filepath)) {
         return
     }
 
-    const files = readFiles(filepath);
+    const filepaths = listFilePaths(filepath, `[0-9]+.jpg$`);
 
-    files.forEach((filepath, idx, list) => {
+    filepaths.forEach((filepath, idx, list) => {
 
-        logProgress(idx, list, 'deleting processed image');
+        logProgress(idx, list, `deleting processed image: ${ path.basename(filepath) }`);
 
-        const filename = path.basename(filepath) || '';
-
-        if (filename.match(`[a-zA-Z-_]+.jpg$`, 'gi')) {
-            console.info(`deleting file ${ filepath }`);
-            fs.unlinkSync(filepath);
-        }
+        fs.unlinkSync(filepath);
     });
 }
 
@@ -78,29 +90,19 @@ function deleteProcessedFile() {
  */
 function processImages(inputPath) {
 
-    const pattern = `[a-zA-Z\-]+.jpg$`
+    const files = listFilePaths(inputPath);
 
-    const files = readFiles(inputPath)
-        .filter(file => file.match(`${ pattern }`, 'gi'));
-        
-    const outputPath = path.join(os.tmpdir(), TEMP);
-    
-    if(!fs.existsSync(outputPath)) {
+    const outputPath = getTempPath();
+
+    if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath);
     }
 
     files.forEach((filepath, idx, list) => {
-        
-        logProgress(idx, list, 'processing image');
 
-        var matches = filepath.match(`${pattern}`, 'gi');
+        logProgress(idx, list, `processing image: ${ path.basename(filepath) }`);
 
-        if (!matches || matches.length < 1) {
-            console.error('error. failed to parse filename for:', filepath)
-            return
-        }
-
-        var caption = extractCaption(matches[0]);
+        var caption = extractCaption(filepath);
 
         execSync(`magick "${filepath}" -gravity Center -background black -resize 1920x1080 -extent 1920x1080 -font Arial-Bold -pointsize 60 -stroke black -strokewidth 2 -fill white -gravity SouthEast -draw "text 30,30 '${ caption }'" ${ path.join(outputPath, `${ idx }.jpg`) }`)
     });
@@ -115,24 +117,24 @@ function sequenceImages(outputPath, duration) {
 
     const pattern = `[0-9]+.jpg$`
     const output = path.join(outputPath, `${ OUTPUT_NAME }.mp4`)
-    
+
     if (fs.existsSync(output)) {
         console.info(`deleting existing file ${ output }`);
         fs.unlinkSync(output);
     }
 
-    if(readFiles(path.join(os.tmpdir(), TEMP))
-        .filter(file => file.match(`${ pattern }`, 'gi')).length === 0) {
-            return;
-        }
-    
+    if (listFilePaths(getTempPath(), pattern).length === 0) {
+        console.info('no processed images for video generation')
+        return;
+    }
+
     const sourcePath = path.join(os.tmpdir(), TEMP, `%d.jpg`);
     console.info(`sequencing new video file from images matching: ${ sourcePath }`);
 
     execSync(`ffmpeg -r 1/${ duration } -i ${ sourcePath } -c:v libx264 -vf "fps=25,format=yuv420p" ${ output }`, {
         stdio: [0, 1, 2]
     });
-    
+
     console.info(`new video file created: ${ output }`);
 }
 
