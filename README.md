@@ -1,11 +1,12 @@
 # node-imgtovid
-node app that generates a single video from a folder of images.
+node app that batch processes a folder of images and converts the processed images into a single video
 
 ## Why?
 
 I was looking for a quick way to convert a large collection of personal photos into a single video. 
-The photos I needed to process where named with a particular naming convention - this app takes advantage 
-of this to automatically place captions over each photo in the resulting video.
+The photos I needed to process where named with a particular naming convention - this app takes advantage of this naming convention to extract meaningful captions from photo filenames, which are then added as captions to photo in the resulting video.
+
+This app also batch processes copies of all input photos, resizing, centering and compressing them for use in the output final video.
 
 ## Installation
 
