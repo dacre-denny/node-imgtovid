@@ -63,7 +63,7 @@ function deleteProcessedFile() {
 
         const filename = path.basename(filepath) || '';
 
-        if (filename.match(`[a-zA-Z-_]+.[jpg|png]$`, 'gi')) {
+        if (filename.match(`[a-zA-Z-_]+.jpg$`, 'gi')) {
             console.info(`deleting file ${ filepath }`);
             fs.unlinkSync(filepath);
         }
@@ -78,11 +78,11 @@ function deleteProcessedFile() {
  */
 function processImages(inputPath) {
 
-    const pattern = `[a-zA-Z\-]+.[jpg|png]$`
+    const pattern = `[a-zA-Z\-]+.jpg$`
 
     const files = readFiles(inputPath)
         .filter(file => file.match(`${ pattern }`, 'gi'));
-    
+        
     const outputPath = path.join(os.tmpdir(), TEMP);
     
     if(!fs.existsSync(outputPath)) {
@@ -113,12 +113,18 @@ function processImages(inputPath) {
  */
 function sequenceImages(outputPath, duration) {
 
+    const pattern = `[0-9]+.jpg$`
     const output = path.join(outputPath, `${ OUTPUT_NAME }.mp4`)
     
     if (fs.existsSync(output)) {
         console.info(`deleting existing file ${ output }`);
         fs.unlinkSync(output);
     }
+
+    if(readFiles(path.join(os.tmpdir(), TEMP))
+        .filter(file => file.match(`${ pattern }`, 'gi')).length === 0) {
+            return;
+        }
     
     const sourcePath = path.join(os.tmpdir(), TEMP, `%d.jpg`);
     console.info(`sequencing new video file from images matching: ${ sourcePath }`);
