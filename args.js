@@ -4,12 +4,12 @@ const process = require('process');
  * Utility method to get an process arguments value
  * @param {*} key 
  */
-function getArg(key) {
+function hasKey(key) {
 
     const args = process.argv;
     const idx = args.findIndex(argument => (argument || '').toLowerCase() === key);
 
-    return args[idx];
+    return !!(args[idx]);
 }
 
 /**
@@ -18,7 +18,7 @@ function getArg(key) {
  * @param {*} key 
  * @param {*} defaultValue 
  */
-function getArgPath(key, defaultValue) {
+function getPath(key, defaultValue) {
 
     const args = process.argv;
     const idx = args.findIndex(argument => (argument || '').toLowerCase() === key);
@@ -31,6 +31,6 @@ function getArgPath(key, defaultValue) {
 }
 
 module.exports = {
-    getArg,
-    getArgPath
+    hasKey,
+    getPath
 }

@@ -3,8 +3,7 @@ const os = require('os');
 const execSync = require('child_process').execSync;
 const path = require('path');
 
-const TEMP = 'processed_'
-const OUTPUT_PREFIX = 'processed_'
+const TEMP = 'imgtovid_processing'
 const OUTPUT_NAME = 'output'
 const TIME_PER_IMAGE = '4'
 
@@ -50,7 +49,7 @@ function deleteProcessedFile() {
 
         const filename = path.basename(filepath) || '';
 
-        if (filename.match(`${OUTPUT_PREFIX}_[a-zA-Z-_]+.[jpg|png]$`, 'gi')) {
+        if (filename.match(`[a-zA-Z-_]+.[jpg|png]$`, 'gi')) {
             console.info(`deleting file ${ filepath }`);
             fs.unlinkSync(filepath);
         }
@@ -58,7 +57,7 @@ function deleteProcessedFile() {
 }
 
 /**
- * Processes input image file. Applies uniform/box resize, centers and captions the image. The result is prefixed with OUTPUT_PREFIX for subsequent processing
+ * Processes input image file. Applies uniform/box resize, centers and captions the image. The result is put in os.temp for subsequent processing
  * @param {*} file 
  * @param {*} idx 
  * @param {*} list 
@@ -96,7 +95,7 @@ function processImages(inputPath) {
         console.log('file', filepath)
         console.log(caption)
 
-        const output = path.join(outputPath, `${ OUTPUT_PREFIX }${ idx }.jpg`)  
+        const output = path.join(outputPath, `${ idx }.jpg`)  
         console.log('output',output)
         execSync(`magick "${filepath}" -gravity Center -background black -resize 1920x1080 -extent 1920x1080 -font Arial-Bold -pointsize 60 -stroke black -strokewidth 2 -fill white -gravity SouthEast -draw "text 30,30 '${ caption }'" ${ output }`)
     })
@@ -114,7 +113,7 @@ function sequenceImages(outputPath) {
         fs.unlinkSync(output);
     }
     
-    const tempPath = path.join(os.tmpdir(), TEMP, `${ OUTPUT_PREFIX }%d.jpg`);
+    const tempPath = path.join(os.tmpdir(), TEMP, `%d.jpg`);
     console.info(`sequencing new video file ${ output }`);
     execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ tempPath } -c:v libx264 -vf "fps=25,format=yuv420p" ${ output }`, {
         stdio: [0, 1, 2]
