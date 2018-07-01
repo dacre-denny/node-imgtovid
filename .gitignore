@@ -1,2 +1,3 @@
 **/node_modules
-*.jpg
+**/*.jpg
+**/*.mp4
