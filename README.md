@@ -1,5 +1,5 @@
 # node-imgtovid
-node app that batch processes a folder of images and converts the processed images into a single video
+Simple app that batch processes a folder of images and converts the processed images into a single video
 
 ## Why?
 
