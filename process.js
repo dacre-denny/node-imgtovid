@@ -4,7 +4,7 @@ const execSync = require('child_process').execSync;
 const path = require('path');
 
 const TEMP = 'imgtovid_processing'
-const OUTPUT_NAME = 'output'
+const OUTPUT_NAME = 'output_video'
 const TIME_PER_IMAGE = '4'
 
 /**
@@ -28,6 +28,21 @@ function readFiles(dir) {
 
     return fs.readdirSync(dir)
         .map(file => path.join(dir, file))
+}
+
+/**
+ * Utility method to extract the caption from a filename
+ * @param {*} filename 
+ */
+function extractCaption(filename) {
+    
+    return filename
+    .replace(/.jpg/gi, '')
+    .replace(/.png/gi, '')
+    .replace(/-/gi, ' ')
+    .replace(/(?:^|\s)\S/g, c => c.toUpperCase())
+    .replace(/and/gi, 'and')
+    .replace(/with/gi, 'with');
 }
 
 /**
@@ -86,19 +101,10 @@ function processImages(inputPath) {
             return
         }
 
-        var caption = matches[0]
-            .replace(/.jpg/gi, '')
-            .replace(/-/gi, ' ')
-            .replace(/(?:^|\s)\S/g, c => c.toUpperCase())
-            .replace(/and/gi, 'and')
-            .replace(/with/gi, 'with');
-        console.log('file', filepath)
-        console.log(caption)
+        var caption = extractCaption(matches[0]);
 
-        const output = path.join(outputPath, `${ idx }.jpg`)  
-        console.log('output',output)
-        execSync(`magick "${filepath}" -gravity Center -background black -resize 1920x1080 -extent 1920x1080 -font Arial-Bold -pointsize 60 -stroke black -strokewidth 2 -fill white -gravity SouthEast -draw "text 30,30 '${ caption }'" ${ output }`)
-    })
+        execSync(`magick "${filepath}" -gravity Center -background black -resize 1920x1080 -extent 1920x1080 -font Arial-Bold -pointsize 60 -stroke black -strokewidth 2 -fill white -gravity SouthEast -draw "text 30,30 '${ caption }'" ${ path.join(outputPath, `${ idx }.jpg`) }`)
+    });
 }
 
 /**
@@ -117,7 +123,7 @@ function sequenceImages(outputPath) {
     console.info(`sequencing new video file ${ output }`);
     execSync(`ffmpeg -r 1/${ TIME_PER_IMAGE } -i ${ tempPath } -c:v libx264 -vf "fps=25,format=yuv420p" ${ output }`, {
         stdio: [0, 1, 2]
-    })
+    });
 }
 
 module.exports = {
