@@ -45,7 +45,7 @@ function listFilePaths(dir, filenameFilter = `[a-zA-Z\-]+.jpg$`) {
 function extractCaption(filename) {
 
     var matches = filename.match(`[a-zA-Z\-]+.jpg$`, 'gi');
-console.log('matches', matches)
+
     if (!matches || matches.length < 1) {
 
         return ''
