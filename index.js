@@ -11,7 +11,7 @@ if (!commandExistsSync('magick')) {
     throw new Error('magick not found. install ImageMagick 7.0.8. https://www.imagemagick.org/script/index.php')
 }
 
-if(Args.hasKey('-h')) {
+if(Args.hasKey('-h') || !Args.hasAnyArgs()) {
 
     console.log(`
 run the app via node:

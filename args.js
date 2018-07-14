@@ -1,6 +1,14 @@
 const process = require('process');
 
 /**
+ * Utility method returns true if additional arguments provided
+ */
+function hasAnyArgs() {
+
+    return process.argv.length > 1;
+}
+
+/**
  * Utility method to get an process arguments value
  * @param {*} key 
  */
@@ -31,6 +39,7 @@ function getArg(key, defaultValue) {
 }
 
 module.exports = {
+    hasAnyArgs,
     hasKey,
     getArg
 }
