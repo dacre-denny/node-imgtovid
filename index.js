@@ -28,9 +28,9 @@ supported argument:
 }
 else {
 
-    var inputPath = Args.getArg('-i', './');
-    var outputPath = Args.getArg('-o', './');
-    var duration = parseInt(Args.getArg('-d', '4'));
+    const inputPath = Args.getArg('-i', './');
+    const outputPath = Args.getArg('-o', './');
+    const duration = parseInt(Args.getArg('-d', '4'));
 
     if(isNaN(duration) || duration < 1) {
         throw Error('duration must be 1 or more')
