@@ -32,7 +32,7 @@ else {
     const inputPath = Args.getArg('-i', './');
     const outputPath = Args.getArg('-o', './');
     const duration = parseInt(Args.getArg('-d', '4'));
-    const randomize = Args.getArg('-process-images', 'false')
+    const randomize = Args.getArg('-process-video-randomize', 'false')
 
     if(isNaN(duration) || duration < 1) {
         throw Error('duration must be 1 or more')

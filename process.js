@@ -99,7 +99,8 @@ function processImages(inputPath, randomizeOrder) {
     }
 
     if(randomizeOrder) {
-        
+
+        console.log('Randomizing video sequence');
         files = files.sort(() => Math.random() > 0.5);
     }
 
