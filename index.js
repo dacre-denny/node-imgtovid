@@ -22,6 +22,7 @@ supported argument:
     -o : specify destination directory for output_video.mp4
     -d : specify the duration in seconds for each photo in the output video
     -process-images [true|false] : controls if photos in source direction are processed (defaults to true)
+    -process-video-randomize [true|false] : randomize the order of photos in the sequenced video (defaults to false)
     -process-video [true|false] : controls video is generated from processed photos (defaults to true)
     -h : display this help summary
     `)
@@ -31,6 +32,7 @@ else {
     const inputPath = Args.getArg('-i', './');
     const outputPath = Args.getArg('-o', './');
     const duration = parseInt(Args.getArg('-d', '4'));
+    const randomize = Args.getArg('-process-images', 'false')
 
     if(isNaN(duration) || duration < 1) {
         throw Error('duration must be 1 or more')
@@ -38,7 +40,7 @@ else {
     
     if(Args.getArg('-process-images', 'true') !== 'false') {
         Process.deleteProcessedFile();
-        Process.processImages(inputPath);
+        Process.processImages(inputPath, randomize === 'true');
     }
     else {
         console.log('Skipping image processing')

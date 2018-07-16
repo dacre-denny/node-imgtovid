@@ -88,14 +88,19 @@ function deleteProcessedFile() {
  * @param {*} idx 
  * @param {*} list 
  */
-function processImages(inputPath) {
+function processImages(inputPath, randomizeOrder) {
 
-    const files = listFilePaths(inputPath);
+    let files = listFilePaths(inputPath);
 
     const outputPath = getTempPath();
 
     if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath);
+    }
+
+    if(randomizeOrder) {
+        
+        files = files.sort(() => Math.random() > 0.5);
     }
 
     files.forEach((filepath, idx, list) => {
